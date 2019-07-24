@@ -7,12 +7,22 @@ import CustomMarker from './CustomMarker';
 
 export default class MapWithClustering extends Component {
   state = {
-    currentRegion: this.props.region,
+    currentRegion: this.props.initialRegion || this.props.region,
     currentChildren: this.props.children,
-    clusterStyle: {
+    clusterStyleRed: {
       borderRadius: w(15),
-      backgroundColor: this.props.clusterColor,
-      borderColor: this.props.clusterBorderColor,
+      backgroundColor: '#FF005B',
+      borderColor: '#FFFFFF',
+      borderWidth: this.props.clusterBorderWidth,
+      width: w(15),
+      height: w(15),
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    clusterStyleBlue: {
+      borderRadius: 20,
+      backgroundColor: '#3496CE',
+      borderColor: '#FFFFFF',
       borderWidth: this.props.clusterBorderWidth,
       width: w(15),
       height: w(15),
@@ -21,7 +31,7 @@ export default class MapWithClustering extends Component {
     },
     clusterTextStyle: {
       fontSize: this.props.clusterTextSize,
-      color: this.props.clusterTextColor,
+      color: '#FFFFFF',
       fontWeight: 'bold',
     },
   };
@@ -59,13 +69,16 @@ export default class MapWithClustering extends Component {
   };
 
   createMarkersOnMap = () => {
-    const markers = [];
     const otherChildren = [];
+
+    let clustersGroups = {};
 
     React.Children.forEach(this.props.children, (marker) => {
       if (marker !== null) {
-        if (marker.props && marker.props.coordinate && marker.props.cluster !== false) {
-          markers.push({
+        if (marker.props && marker.props.coordinate && marker.props.cluster !== false && marker.props.type) {
+          clustersGroups[marker.props.type] = clustersGroups[marker.props.type] || [];
+
+          clustersGroups[marker.props.type].push({
             marker,
             properties: { point_count: 0 },
             geometry: {
@@ -76,23 +89,27 @@ export default class MapWithClustering extends Component {
               ],
             },
           });
+
         } else {
           otherChildren.push(marker);
         }
       } 
     });
 
-    if (!this.superCluster) {
-      this.superCluster = SuperCluster({
+    clustersGroups = Object.entries(clustersGroups).reduce((res, [type, group]) => {
+      res[type] = SuperCluster({
         radius: this.props.radius,
         maxZoom: 20,
         minZoom: 1,
       });
-    }
-    this.superCluster.load(markers);
+
+      res[type].load(group);
+
+      return res;
+    }, {});
 
     this.setState({
-      markers,
+      clustersGroups,
       otherChildren,
     }, () => {
       this.calculateClustersForMap();
@@ -130,31 +147,37 @@ export default class MapWithClustering extends Component {
   };
 
   calculateClustersForMap = async (currentRegion = this.state.currentRegion) => {
-    let clusteredMarkers = [];
+    const clustersMarkersGroups = {};
 
-    if (this.props.clustering && this.superCluster) {
-      const bBox = this.calculateBBox(this.state.currentRegion);
-      let zoom = this.getBoundsZoomLevel(bBox, { height: h(100), width: w(100) });
-      const clusters = await this.superCluster.getClusters([bBox[0], bBox[1], bBox[2], bBox[3]], zoom);
-      const CustomDefinedMarker = this.props.customDefinedMarker || CustomMarker
-      
-      clusteredMarkers = clusters.map(cluster => (<CustomDefinedMarker
-        pointCount={cluster.properties.point_count}
-        clusterId={cluster.properties.cluster_id}
-        geometry={cluster.geometry}
-        clusterStyle={this.state.clusterStyle}
-        clusterTextStyle={this.state.clusterTextStyle}
-        marker={cluster.properties.point_count === 0 ? cluster.marker : null}
-        key={JSON.stringify(cluster.geometry) + cluster.properties.cluster_id + cluster.properties.point_count}
-        onClusterPress={this.props.onClusterPress}
-      />));
+    if (this.props.clustering && this.state.clustersGroups) {
+      for (let type in this.state.clustersGroups) {
+        const superCluster = this.state.clustersGroups[type];
+
+        const bBox = this.calculateBBox(this.state.currentRegion);
+        let zoom = this.getBoundsZoomLevel(bBox, { height: h(100), width: w(100) });
+        const clusters = await superCluster.getClusters([bBox[0], bBox[1], bBox[2], bBox[3]], zoom);
+        const CustomDefinedMarker = this.props.customDefinedMarker || CustomMarker
+  
+        const clusterStyle = type == 'MAIN_PARKING' ? this.state.clusterStyleRed : this.state.clusterStyleBlue;
+
+        clustersMarkersGroups[type] = clusters.map(cluster => (<CustomDefinedMarker
+          pointCount={cluster.properties.point_count}
+          clusterId={cluster.properties.cluster_id}
+          geometry={cluster.geometry}
+          clusterStyle={clusterStyle}
+          clusterTextStyle={this.state.clusterTextStyle}
+          marker={cluster.properties.point_count === 0 ? cluster.marker : null}
+          key={JSON.stringify(cluster.geometry) + cluster.properties.cluster_id + cluster.properties.point_count}
+          onClusterPress={this.props.onClusterPress}
+        />));
+      }
     } else {
       clusteredMarkers = this.state.markers.map(marker => marker.marker);
     }
 
     this.setState({
-      clusteredMarkers,
-      currentRegion,
+      clustersMarkersGroups,
+      currentRegion
     });
   };
 
@@ -170,13 +193,14 @@ export default class MapWithClustering extends Component {
 
   render() {
     return (
-      <MapView
+      <MapView 
+        ref={(ref) => this.mapView = ref}
         {...this.removeChildrenFromProps(this.props)}
-        ref={(ref) => { this.root = ref; }}
-        region={this.state.currentRegion}
         onRegionChangeComplete={this.onRegionChangeComplete}
       >
-        {this.state.clusteredMarkers}
+        {Object.values(this.state.clustersMarkersGroups || []).map((group) => {
+          return group;
+        })}
         {this.state.otherChildren}
       </MapView>
     );
@@ -187,9 +211,6 @@ MapWithClustering.propTypes = {
   region: PropTypes.object,
   clustering: PropTypes.bool,
   radius: PropTypes.number,
-  clusterColor: PropTypes.string,
-  clusterTextColor: PropTypes.string,
-  clusterBorderColor: PropTypes.string,
   clusterBorderWidth: PropTypes.number,
   clusterTextSize: PropTypes.number,
   onClusterPress: PropTypes.func,
@@ -200,10 +221,7 @@ const totalSize = num => (Math.sqrt((h(100) * h(100)) + (w(100) * w(100))) * num
 MapWithClustering.defaultProps = {
   clustering: true,
   radius: w(5),
-  clusterColor: '#F5F5F5',
-  clusterTextColor: '#FF5252',
-  clusterBorderColor: '#FF5252',
-  clusterBorderWidth: 1,
+  clusterBorderWidth: 2,
   clusterTextSize: totalSize(2.4),
   onClusterPress: () => {},
 };
