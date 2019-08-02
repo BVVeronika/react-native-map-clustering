@@ -20,7 +20,7 @@ export default class MapWithClustering extends Component {
       alignItems: 'center',
     },
     clusterStyleBlue: {
-      borderRadius: 20,
+      borderRadius: w(15),
       backgroundColor: '#3496CE',
       borderColor: '#FFFFFF',
       borderWidth: this.props.clusterBorderWidth,
