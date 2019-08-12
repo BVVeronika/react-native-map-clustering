@@ -11,23 +11,27 @@ export default class MapWithClustering extends Component {
     currentChildren: this.props.children,
     clusterStyleRed: {
       borderRadius: w(15),
-      backgroundColor: '#FF005B',
+      backgroundColor: 'rgb(255, 0, 91)',
       borderColor: '#FFFFFF',
       borderWidth: this.props.clusterBorderWidth,
-      width: w(15),
-      height: w(15),
+      width: 55,
+      height: 55,
       justifyContent: 'center',
       alignItems: 'center',
+      position: 'relative',
+      zIndex: 100
     },
     clusterStyleBlue: {
       borderRadius: w(15),
-      backgroundColor: '#3496CE',
+      backgroundColor: 'rgb(52, 150, 206)',
       borderColor: '#FFFFFF',
       borderWidth: this.props.clusterBorderWidth,
-      width: w(15),
-      height: w(15),
+      width: 40,
+      height: 40,
       justifyContent: 'center',
       alignItems: 'center',
+      position: 'relative',
+      zIndex: 10
     },
     clusterTextStyle: {
       fontSize: this.props.clusterTextSize,
@@ -221,7 +225,7 @@ const totalSize = num => (Math.sqrt((h(100) * h(100)) + (w(100) * w(100))) * num
 MapWithClustering.defaultProps = {
   clustering: true,
   radius: w(5),
-  clusterBorderWidth: 2,
+  clusterBorderWidth: 3,
   clusterTextSize: totalSize(2.4),
   onClusterPress: () => {},
 };
