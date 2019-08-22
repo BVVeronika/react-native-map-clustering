@@ -10,19 +10,19 @@ export default class MapWithClustering extends Component {
     currentRegion: this.props.initialRegion || this.props.region,
     currentChildren: this.props.children,
     clusterStyleRed: {
-      borderRadius: w(15),
+      borderRadius: 20,
       backgroundColor: 'rgb(255, 0, 91)',
       borderColor: '#FFFFFF',
       borderWidth: this.props.clusterBorderWidth,
-      width: 55,
-      height: 55,
+      width: 40,
+      height: 40,
       justifyContent: 'center',
       alignItems: 'center',
       position: 'relative',
       zIndex: 100
     },
     clusterStyleBlue: {
-      borderRadius: w(15),
+      borderRadius: 20,
       backgroundColor: 'rgb(52, 150, 206)',
       borderColor: '#FFFFFF',
       borderWidth: this.props.clusterBorderWidth,
