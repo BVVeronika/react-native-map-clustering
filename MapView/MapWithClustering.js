@@ -9,29 +9,23 @@ export default class MapWithClustering extends Component {
   state = {
     currentRegion: this.props.initialRegion || this.props.region,
     currentChildren: this.props.children,
-    clusterStyleRed: {
-      borderRadius: 20,
-      backgroundColor: 'rgb(255, 0, 91)',
-      borderColor: '#FFFFFF',
-      borderWidth: this.props.clusterBorderWidth,
-      width: 40,
-      height: 40,
+    cluster: {
       justifyContent: 'center',
       alignItems: 'center',
-      position: 'relative',
-      zIndex: 100
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      borderColor: '#FFFFFF',
+      borderWidth: this.props.clusterBorderWidth
+    },
+    clusterStyleRed: {
+      backgroundColor: 'rgb(255, 0, 91)',
     },
     clusterStyleBlue: {
-      borderRadius: 20,
-      backgroundColor: 'rgb(52, 150, 206)',
-      borderColor: '#FFFFFF',
-      borderWidth: this.props.clusterBorderWidth,
-      width: 40,
-      height: 40,
-      justifyContent: 'center',
-      alignItems: 'center',
-      position: 'relative',
-      zIndex: 10
+      backgroundColor: 'rgb(52, 150, 206)'
+    },
+    clusterStyleGrey: {
+      backgroundColor: 'rgb(208, 209, 213)'
     },
     clusterTextStyle: {
       fontSize: this.props.clusterTextSize,
@@ -162,13 +156,17 @@ export default class MapWithClustering extends Component {
         const clusters = await superCluster.getClusters([bBox[0], bBox[1], bBox[2], bBox[3]], zoom);
         const CustomDefinedMarker = this.props.customDefinedMarker || CustomMarker
   
-        const clusterStyle = type == 'MAIN_PARKING' ? this.state.clusterStyleRed : this.state.clusterStyleBlue;
+        const clusterStyle = type == 'MAIN_MARKER'
+          ? this.state.clusterStyleRed
+          : type == 'NOT_ACTIVE_MARKER'
+          ? this.state.clusterStyleGrey
+          : this.state.clusterStyleBlue;
 
         clustersMarkersGroups[type] = clusters.map(cluster => (<CustomDefinedMarker
           pointCount={cluster.properties.point_count}
           clusterId={cluster.properties.cluster_id}
           geometry={cluster.geometry}
-          clusterStyle={clusterStyle}
+          clusterStyle={[clusterStyle, this.state.cluster]}
           clusterTextStyle={this.state.clusterTextStyle}
           marker={cluster.properties.point_count === 0 ? cluster.marker : null}
           key={JSON.stringify(cluster.geometry) + cluster.properties.cluster_id + cluster.properties.point_count}
@@ -226,6 +224,6 @@ MapWithClustering.defaultProps = {
   clustering: true,
   radius: w(5),
   clusterBorderWidth: 3,
-  clusterTextSize: totalSize(2.4),
+  clusterTextSize: totalSize(2),
   onClusterPress: () => {},
 };
