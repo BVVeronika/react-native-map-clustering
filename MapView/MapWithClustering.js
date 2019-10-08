@@ -47,7 +47,7 @@ export default class MapWithClustering extends Component {
       return null
     }
   }
-  componentDidUpdate(prevProps, prevState) {
+  componentDidUpdate(prevProps) {
     if (this.props.children !== prevProps.children) {
       this.createMarkersOnMap(this.state.currentChildren);
     }
@@ -55,11 +55,12 @@ export default class MapWithClustering extends Component {
 
   onRegionChangeComplete = (region) => {
     const { latitude, latitudeDelta, longitude, longitudeDelta } = this.state.currentRegion;
+
     if (region.longitudeDelta <= 80) {
       if ((Math.abs(region.latitudeDelta - latitudeDelta) > latitudeDelta / 8)
         || (Math.abs(region.longitude - longitude) >= longitudeDelta / 5)
         || (Math.abs(region.latitude - latitude) >= latitudeDelta / 5)) {
-        this.calculateClustersForMap(region);
+        this.calculateClustersForMap();
       }
     }
     if(this.props.onRegionChangeComplete)
@@ -68,7 +69,6 @@ export default class MapWithClustering extends Component {
 
   createMarkersOnMap = () => {
     const otherChildren = [];
-
     let clustersGroups = {};
 
     React.Children.forEach(this.props.children, (marker) => {
@@ -117,8 +117,8 @@ export default class MapWithClustering extends Component {
   calculateBBox = region => [
     region.longitude - region.longitudeDelta, // westLng - min lng
     region.latitude - region.latitudeDelta, // southLat - min lat
-    region.longitude + region.longitudeDelta , // eastLng - max lng
-    region.latitude + region.latitudeDelta// northLat - max lat
+    region.longitude + region.longitudeDelta, // eastLng - max lng
+    region.latitude + region.latitudeDelta // northLat - max lat
   ];
 
   getBoundsZoomLevel = (bounds, mapDim) => {
@@ -144,16 +144,15 @@ export default class MapWithClustering extends Component {
     return Math.min(latZoom, lngZoom, ZOOM_MAX);
   };
 
-  calculateClustersForMap = async (currentRegion = this.state.currentRegion) => {
+  calculateClustersForMap = async (currentRegion = this.props.initialRegion) => {
     const clustersMarkersGroups = {};
 
     if (this.props.clustering && this.state.clustersGroups) {
       for (let type in this.state.clustersGroups) {
         const superCluster = this.state.clustersGroups[type];
-
-        const bBox = this.calculateBBox(this.state.currentRegion);
+        const bBox = this.calculateBBox(currentRegion);
         let zoom = this.getBoundsZoomLevel(bBox, { height: h(100), width: w(100) });
-        const clusters = await superCluster.getClusters([bBox[0], bBox[1], bBox[2], bBox[3]], zoom);
+        const clusters = await superCluster.getClusters(bBox, zoom);
         const CustomDefinedMarker = this.props.customDefinedMarker || CustomMarker
   
         const clusterStyle = type == 'MAIN_MARKER'
