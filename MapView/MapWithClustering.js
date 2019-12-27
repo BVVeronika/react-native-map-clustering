@@ -147,12 +147,13 @@ export default class MapWithClustering extends Component {
   calculateClustersForMap = async (currentRegion = this.props.initialRegion) => {
     const clustersMarkersGroups = {};
 
-    if (this.props.clustering && this.state.clustersGroups) {
+    if (this.props.clustering && this.state.clustersGroups && Object.keys(this.state.clustersGroups).length) {
       for (let type in this.state.clustersGroups) {
         const superCluster = this.state.clustersGroups[type];
         const bBox = this.calculateBBox(currentRegion);
         let zoom = this.getBoundsZoomLevel(bBox, { height: h(100), width: w(100) });
-        const clusters = await superCluster.getClusters(bBox, zoom);
+        let clusters = [];
+        clusters = await superCluster.getClusters(bBox, zoom);
         const CustomDefinedMarker = this.props.customDefinedMarker || CustomMarker
   
         const clusterStyle = type == 'MAIN_MARKER'
@@ -173,7 +174,7 @@ export default class MapWithClustering extends Component {
         />));
       }
     } else {
-      clusteredMarkers = this.state.markers.map(marker => marker.marker);
+      clusteredMarkers = (this.state.markers || []).map(marker => marker.marker);
     }
 
     this.setState({
