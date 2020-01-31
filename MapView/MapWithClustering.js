@@ -5,6 +5,7 @@ import { width as w, height as h } from 'react-native-dimension';
 import SuperCluster from 'supercluster';
 import CustomMarker from './CustomMarker';
 
+let nextRenderIterator = 1;
 export default class MapWithClustering extends Component {
   state = {
     currentRegion: this.props.initialRegion || this.props.region,
@@ -146,7 +147,7 @@ export default class MapWithClustering extends Component {
 
   calculateClustersForMap = async (currentRegion = this.props.initialRegion) => {
     const clustersMarkersGroups = {};
-
+    const currentRenderIterator = nextRenderIterator++;
     if (this.props.clustering && this.state.clustersGroups && Object.keys(this.state.clustersGroups).length) {
       for (let type in this.state.clustersGroups) {
         const superCluster = this.state.clustersGroups[type];
@@ -175,6 +176,10 @@ export default class MapWithClustering extends Component {
       }
     } else {
       clusteredMarkers = (this.state.markers || []).map(marker => marker.marker);
+    }
+
+    if (currentRenderIterator !== (nextRenderIterator-1)) {
+      return;
     }
 
     this.setState({
